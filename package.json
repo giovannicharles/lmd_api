@@ -1,0 +1,36 @@
+{
+  "name": "lmd_api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API REST pour LaMaison Dany (parfums, cosmétiques, vins & plus) — Node.js + Express + PostgreSQL + Cloudinary",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "start:prod": "node src/scripts/migrate.js && node src/server.js",
+    "images:migrate": "node src/scripts/migrate-images.js",
+    "dev": "node --watch src/server.js",
+    "lint": "node --check src/server.js",
+    "db:migrate": "node src/scripts/migrate.js",
+    "db:seed": "node src/scripts/seed.js",
+    "admin:create": "node src/scripts/create-admin.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.11.0",
+    "multer": "^2.2.0",
+    "multer-storage-cloudinary": "^4.0.0",
+    "pg": "^8.23.0",
+    "slugify": "^1.6.9",
+    "zod": "^4.4.3"
+  }
+}

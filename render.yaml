@@ -1,0 +1,35 @@
+# Blueprint Render : l'API (Node) seule. Le site est hébergé à part (voir DEPLOY.md).
+# Base de données PostgreSQL : Neon (gratuit). Photos : Cloudinary.
+services:
+  - type: web
+    name: lmd-api
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false # adresse du site, ex. https://lamaisondany.netlify.app
+      - key: FRONTEND_URL
+        sync: false # idem, sans / final
+      - key: PUBLIC_SITE_URL
+        sync: false # idem (ou votre nom de domaine définitif)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

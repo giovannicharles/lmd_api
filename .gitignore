@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Env
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
+Thumbs.db
+
+# Uploads locaux (si jamais on ne passe pas par Cloudinary)
+uploads/
+
+# Cache
+.cache/
+.eslintcache
