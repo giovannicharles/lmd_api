@@ -3,7 +3,7 @@ import path from "node:path";
 import cloudinary from "../config/cloudinary.js";
 
 const FOLDER = "lamaison-dany";
-const LOCAL_FILE = /^[a-f0-9-]{36}\.(jpg|png|webp|avif)$/i;
+const LOCAL_FILE = /^[a-f0-9-]{36}\.(jpg|png|webp|avif|mp4|webm|mov)$/i;
 
 export function publicIdFromUrl(url) {
   if (typeof url !== "string") return null;

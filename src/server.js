@@ -8,6 +8,7 @@ import { env } from "./config/env.js";
 import router from "./routes/index.js";
 import { mountFrontend, mountSeoRoutes } from "./seo/frontend.js";
 import { notFound, errorHandler } from "./middleware/errors.js";
+import { applyMigrations } from "./scripts/migrate.js";
 
 const app = express();
 const PORT = env.port;
@@ -27,9 +28,10 @@ app.use(
       directives: {
         "default-src": ["'self'"],
         "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        "font-src": ["'self'", "https://fonts.gstatic.com", "data:"],
+        "style-src": ["'self'", "'unsafe-inline'"],
+        "font-src": ["'self'", "data:"],
         "img-src": ["'self'", "data:", "blob:", "https:", ...(isProd ? [] : ["http://localhost:*"])],
+        "media-src": ["'self'", "blob:", "https:", ...(isProd ? [] : ["http://localhost:*"])],
         "connect-src": ["'self'", ...(isProd ? [] : ["http://localhost:*"])],
         "frame-ancestors": ["'none'"],
         "object-src": ["'none'"],
@@ -57,6 +59,14 @@ mountFrontend(app);
 
 app.use(notFound);
 app.use(errorHandler);
+
+if (process.env.AUTO_MIGRATE !== "false") {
+  try {
+    await applyMigrations();
+  } catch (err) {
+    console.error("Auto-migration failed:", err);
+  }
+}
 
 app.listen(PORT, () => {
   console.log(`lmd_api listening on http://localhost:${PORT}`);

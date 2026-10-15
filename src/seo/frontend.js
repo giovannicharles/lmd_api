@@ -124,7 +124,9 @@ export function mountFrontend(app) {
     express.static(frontendDist, {
       index: false,
       setHeaders(res, filePath) {
-        if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+        if (path.basename(filePath) === "sw.js") {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
         } else {
           res.setHeader("Cache-Control", "public, max-age=86400");

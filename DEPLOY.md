@@ -30,20 +30,40 @@ Sur <https://cloudinary.com>, relevez `Cloud name`, `API Key` et `API Secret` (t
 | `FRONTEND_URL` | Adresse du site, sans `/` final |
 | `PUBLIC_SITE_URL` | Adresse publique du site (votre domaine définitif quand il existe) |
 
-Les trois dernières peuvent être renseignées après l'étape 4, quand l'adresse du site existe. Redéployez ensuite.
+Pour votre site actuel (`https://la-maison-dany.vercel.app`), sans `/` final :
 
-4. Au démarrage, les migrations de la base s'appliquent toutes seules (`npm run start:prod`).
-5. Vérifiez `https://VOTRE-API.onrender.com/health` : la réponse est `{"status":"ok"...}`.
+```
+CORS_ORIGIN=https://la-maison-dany.vercel.app
+FRONTEND_URL=https://la-maison-dany.vercel.app
+PUBLIC_SITE_URL=https://la-maison-dany.vercel.app
+```
+
+Redéployez l'API après avoir modifié ces variables. Quand vous aurez un nom de domaine, remplacez ces trois valeurs par le domaine définitif.
+
+4. **Commande de démarrage** : dans Render > **Settings > Build & Deploy > Start Command**, mettez `npm run start:prod` (et non `node src/server.js`). C'est elle qui crée les tables de la base au démarrage. Les journaux doivent alors afficher `OK 001_init.sql`, `OK 002_...`, etc.
+5. Vérifiez `https://VOTRE-API.onrender.com/health` : la réponse est `{"status":"ok"...}`. Puis `https://VOTRE-API.onrender.com/api/categories` : la réponse doit être `{"data":[...]}` et non une erreur 500 (une erreur 500 veut presque toujours dire que les tables n'existent pas : voir « Créer les tables depuis votre ordinateur » ci-dessous).
+
+### Créer les tables depuis votre ordinateur
+
+L'onglet **Shell** de Render est réservé aux offres payantes. Sur l'offre gratuite, lancez les commandes depuis votre ordinateur, vers la base Neon. Dans PowerShell, dans le dossier `lmd_api` :
+
+```powershell
+$env:DATABASE_URL = "postgresql://...votre-chaine-neon..."
+$env:DATABASE_SSL = "true"
+npm run db:migrate
+```
+
+Les commandes `npm run admin:create` et `npm run images:migrate` s'utilisent de la même façon (voir plus bas). Fermez ensuite la fenêtre PowerShell : ces variables ne sont valables que pour elle, et votre `.env` local reste inchangé.
 
 ## 4. Votre accès admin
 
-Dans l'onglet **Shell** du service Render :
+Depuis votre ordinateur, comme ci-dessus (même fenêtre PowerShell, avec `DATABASE_URL` pointant vers Neon) :
 
-```bash
+```powershell
 npm run admin:create -- 237690000000 "UnMotDePasseLong" Dany
 ```
 
-Connexion ensuite sur `https://VOTRE-SITE/admin` avec ce numéro. Dans **Contenu du site > Général**, vérifiez le numéro WhatsApp, la devise et les réseaux sociaux.
+(Avec un Shell Render payant, la même commande s'y lance directement.) Connexion ensuite sur `https://VOTRE-SITE/admin` avec ce numéro. Dans **Contenu du site > Général**, vérifiez le numéro WhatsApp, la devise et les réseaux sociaux.
 
 ## 5. Reprendre les produits saisis en local
 

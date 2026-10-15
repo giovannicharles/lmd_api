@@ -101,3 +101,47 @@ export async function finalizeUpload(req, res, next) {
     next(err);
   }
 }
+
+// ---- Vidéos (mp4, webm, mov) ----
+const VIDEO_EXTENSIONS = new Map([
+  ["video/mp4", "mp4"],
+  ["video/webm", "webm"],
+  ["video/quicktime", "mov"],
+]);
+
+export const videoUpload = multer({
+  storage: useCloudinary
+    ? new CloudinaryStorage({
+        cloudinary,
+        params: {
+          folder: "lamaison-dany/videos",
+          resource_type: "video",
+          allowed_formats: ["mp4", "webm", "mov"],
+        },
+      })
+    : multer.memoryStorage(),
+  limits: { fileSize: 80 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    if (VIDEO_EXTENSIONS.has(file.mimetype)) return cb(null, true);
+    const err = new Error("Format de vidéo non supporte (MP4, WebM ou MOV)");
+    err.status = 400;
+    cb(err);
+  },
+});
+
+export function finalizeVideo(req, res, next) {
+  if (useCloudinary || !req.file) return next();
+  try {
+    const ext = VIDEO_EXTENSIONS.get(req.file.mimetype);
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    const name = `${crypto.randomUUID()}.${ext}`;
+    fs.writeFileSync(path.join(uploadsDir, name), req.file.buffer);
+    const base = env.publicUrl || `${req.protocol}://${req.get("host")}`;
+    req.file.path = `${base}/uploads/${name}`;
+    req.file.filename = name;
+    req.file.format = ext;
+    next();
+  } catch (err) {
+    next(err);
+  }
+}

@@ -24,6 +24,7 @@ const settingsSchema = z
       tiktok: short,
       opening_hours: short,
     }),
+    videos: z.array(z.object({ title: short, src: z.string().trim().max(500), poster: z.string().trim().max(500), product_slug: short })).max(12),
     texts: z.record(z.string().max(60), long).refine((o) => Object.keys(o).length <= 80, "Trop de textes"),
     seo: z.object({
       title: short,
