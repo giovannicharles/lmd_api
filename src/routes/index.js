@@ -7,6 +7,7 @@ import messageRoutes from "./messages.js";
 import mediaRoutes from "./media.js";
 import settingsRoutes from "./settings.js";
 import eventRoutes from "./events.js";
+import chatRoutes from "./chat.js";
 
 const router = Router();
 
@@ -23,6 +24,7 @@ router.get("/", (_req, res) => {
       messages: "/api/messages",
       settings: "/api/settings",
       events: "/api/events",
+      chat: "/api/chat",
     },
   });
 });
@@ -35,5 +37,6 @@ router.use("/messages", messageRoutes);
 router.use("/media", mediaRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/events", eventRoutes);
+router.use("/chat", chatRoutes);
 
 export default router;

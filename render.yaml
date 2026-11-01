@@ -19,6 +19,12 @@ services:
         value: "true"
       - key: JWT_SECRET
         generateValue: true
+      - key: AI_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CORS_ORIGIN
