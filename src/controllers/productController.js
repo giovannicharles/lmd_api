@@ -6,7 +6,7 @@ import { z } from "zod";
 async function releaseImage(url) {
   if (!url) return;
   const { rows } = await query(
-    "SELECT 1 FROM products WHERE image_url = $1 OR images @> to_jsonb($1::text) LIMIT 1",
+    "SELECT 1 FROM products WHERE (image_url = $1 OR images @> to_jsonb($1::text)) LIMIT 1",
     [url]
   );
   if (rows.length === 0) await destroyImage(url);
@@ -30,8 +30,8 @@ export async function listProducts(req, res, next) {
     let sql = `
       SELECT p.*, c.name AS category_name, c.slug AS category_slug
       FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
-      WHERE 1=1
+      LEFT JOIN categories c ON p.category_id = c.id AND c.deleted_at IS NULL
+      WHERE p.deleted_at IS NULL
     `;
     const params = [];
     let idx = 1;
@@ -63,8 +63,8 @@ export async function getProduct(req, res, next) {
     const { rows } = await query(
       `SELECT p.*, c.name AS category_name, c.slug AS category_slug
        FROM products p
-       LEFT JOIN categories c ON p.category_id = c.id
-       WHERE p.slug = $1`,
+       LEFT JOIN categories c ON p.category_id = c.id AND c.deleted_at IS NULL
+       WHERE p.slug = $1 AND p.deleted_at IS NULL`,
       [slug]
     );
     if (rows.length === 0) {
@@ -151,15 +151,18 @@ export async function updateProduct(req, res, next) {
   }
 }
 
+export async function purgeProductImages(row) {
+  for (const url of [row.image_url, ...(row.images || [])]) {
+    if (url) await releaseImage(url);
+  }
+}
+
 export async function deleteProduct(req, res, next) {
   try {
     const { id } = req.params;
-    const { rows, rowCount } = await query("DELETE FROM products WHERE id = $1 RETURNING image_url, images", [id]);
+    const { rowCount } = await query("UPDATE products SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL", [id]);
     if (rowCount === 0) {
       return res.status(404).json({ error: "Product not found" });
-    }
-    for (const url of [rows[0].image_url, ...(rows[0].images || [])]) {
-      if (url) await releaseImage(url);
     }
     res.json({ data: { deleted: true } });
   } catch (err) {
@@ -178,7 +181,7 @@ export async function reorderProducts(req, res, next) {
     await query(
       `UPDATE products p SET sort_order = v.ord::int
        FROM unnest($1::int[]) WITH ORDINALITY AS v(id, ord)
-       WHERE p.id = v.id`,
+       WHERE p.id = v.id AND p.deleted_at IS NULL`,
       [parsed.data.ids]
     );
     res.json({ data: { reordered: parsed.data.ids.length } });

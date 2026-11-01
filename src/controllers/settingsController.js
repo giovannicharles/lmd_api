@@ -25,6 +25,7 @@ const settingsSchema = z
       opening_hours: short,
     }),
     videos: z.array(z.object({ title: short, src: z.string().trim().max(500), poster: z.string().trim().max(500), product_slug: short })).max(12),
+    notifications: z.object({ on_message: z.boolean(), on_handoff: z.boolean(), on_whatsapp_request: z.boolean() }),
     texts: z.record(z.string().max(60), long).refine((o) => Object.keys(o).length <= 400, "Trop de textes"),
     options: z.object({
       color_wine: z.string().trim().regex(/^(#[0-9a-fA-F]{6})?$/),
@@ -42,6 +43,7 @@ const settingsSchema = z
       show_floating_whatsapp: z.boolean(),
       show_prices: z.boolean(),
       show_install_button: z.boolean(),
+      show_visitor_push: z.boolean(),
       show_contact_form: z.boolean(),
       default_sort: z.enum(["default", "price-asc", "price-desc", "name"]),
       hide_unavailable: z.boolean(),

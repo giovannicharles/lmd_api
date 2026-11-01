@@ -8,6 +8,9 @@ import mediaRoutes from "./media.js";
 import settingsRoutes from "./settings.js";
 import eventRoutes from "./events.js";
 import chatRoutes from "./chat.js";
+import pushRoutes from "./push.js";
+import broadcastRoutes from "./broadcasts.js";
+import trashRoutes from "./trash.js";
 
 const router = Router();
 
@@ -38,5 +41,8 @@ router.use("/media", mediaRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/events", eventRoutes);
 router.use("/chat", chatRoutes);
+router.use("/push", pushRoutes);
+router.use("/broadcasts", broadcastRoutes);
+router.use("/trash", trashRoutes);
 
 export default router;

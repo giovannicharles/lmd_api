@@ -25,6 +25,12 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-flash-latest
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: https://la-maison-dany.vercel.app
       - key: JWT_EXPIRES_IN
         value: 7d
       - key: CORS_ORIGIN

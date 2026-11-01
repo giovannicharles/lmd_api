@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { query } from "../config/db.js";
+import { notificationPrefs, notifyAdmins } from "../utils/push.js";
 
 const eventSchema = z.object({
   type: z.enum(["whatsapp_request", "chat_handoff", "product_view"]),
@@ -20,6 +21,20 @@ export async function createEvent(req, res, next) {
       await query("INSERT INTO events (type) VALUES ($1)", [type]);
     }
     res.status(201).json({ data: { recorded: true } });
+    if (type === "chat_handoff" || type === "whatsapp_request") {
+      const prefs = await notificationPrefs();
+      if (type === "chat_handoff" && prefs.on_handoff) {
+        notifyAdmins({ title: "Un client veut vous parler", body: "Il a demandé à continuer la discussion avec l'équipe depuis l'assistant.", url: "/admin?go=messages", tag: "handoff" });
+      }
+      if (type === "whatsapp_request" && prefs.on_whatsapp_request) {
+        let name = "un produit";
+        if (product_id) {
+          const p = await query("SELECT name FROM products WHERE id = $1", [product_id]).catch(() => ({ rows: [] }));
+          if (p.rows[0]) name = p.rows[0].name;
+        }
+        notifyAdmins({ title: "Nouvelle demande WhatsApp", body: `Un visiteur vous écrit au sujet de : ${name}.`, url: "/admin", tag: "whatsapp" });
+      }
+    }
   } catch (err) {
     next(err);
   }
@@ -51,7 +66,7 @@ export async function getStats(req, res, next) {
               COUNT(*) FILTER (WHERE e.type = 'whatsapp_request')::int AS requests,
               COUNT(*) FILTER (WHERE e.type = 'product_view')::int AS views
        FROM events e
-       JOIN products p ON p.id = e.product_id
+       JOIN products p ON p.id = e.product_id AND p.deleted_at IS NULL
        WHERE e.created_at >= now() - ($1::int * interval '1 day')
        GROUP BY p.id
        HAVING COUNT(*) FILTER (WHERE e.type IN ('whatsapp_request','product_view')) > 0

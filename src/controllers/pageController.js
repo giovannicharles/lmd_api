@@ -9,7 +9,7 @@ const pageSchema = z.object({
 
 export async function listPages(req, res, next) {
   try {
-    const { rows } = await query("SELECT * FROM pages ORDER BY title ASC");
+    const { rows } = await query("SELECT * FROM pages WHERE deleted_at IS NULL ORDER BY title ASC");
     res.json({ data: rows });
   } catch (err) {
     next(err);
@@ -19,7 +19,7 @@ export async function listPages(req, res, next) {
 export async function getPage(req, res, next) {
   try {
     const { slug } = req.params;
-    const { rows } = await query("SELECT * FROM pages WHERE slug = $1", [slug]);
+    const { rows } = await query("SELECT * FROM pages WHERE slug = $1 AND deleted_at IS NULL", [slug]);
     if (rows.length === 0) {
       return res.status(404).json({ error: "Page not found" });
     }
@@ -53,7 +53,7 @@ export async function upsertPage(req, res, next) {
 export async function deletePage(req, res, next) {
   try {
     const { id } = req.params;
-    const { rowCount } = await query("DELETE FROM pages WHERE id = $1", [id]);
+    const { rowCount } = await query("UPDATE pages SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL", [id]);
     if (rowCount === 0) {
       return res.status(404).json({ error: "Page not found" });
     }

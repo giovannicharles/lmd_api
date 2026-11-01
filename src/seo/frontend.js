@@ -64,8 +64,8 @@ export function mountSeoRoutes(app) {
     try {
       const origin = originFor(req);
       const [products, categories] = await Promise.all([
-        query("SELECT slug, name, image_url, images, updated_at FROM products ORDER BY sort_order ASC, id ASC"),
-        query("SELECT slug FROM categories c WHERE EXISTS (SELECT 1 FROM products p WHERE p.category_id = c.id) ORDER BY sort_order ASC"),
+        query("SELECT slug, name, image_url, images, updated_at FROM products WHERE deleted_at IS NULL ORDER BY sort_order ASC, id ASC"),
+        query("SELECT slug FROM categories c WHERE c.deleted_at IS NULL AND EXISTS (SELECT 1 FROM products p WHERE p.category_id = c.id AND p.deleted_at IS NULL) ORDER BY sort_order ASC"),
       ]);
       const urls = [
         { loc: `${origin}/`, priority: "1.0" },

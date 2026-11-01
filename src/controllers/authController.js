@@ -42,8 +42,8 @@ export async function login(req, res, next) {
 
     const isEmail = identifier.includes("@");
     const { rows } = isEmail
-      ? await query("SELECT * FROM admins WHERE email = $1", [identifier])
-      : await query("SELECT * FROM admins WHERE phone = $1", [normalizePhone(identifier)]);
+      ? await query("SELECT * FROM admins WHERE email = $1 AND deleted_at IS NULL", [identifier])
+      : await query("SELECT * FROM admins WHERE phone = $1 AND deleted_at IS NULL", [normalizePhone(identifier)]);
 
     const admin = rows[0];
     const valid = admin ? await bcrypt.compare(parsed.data.password, admin.password) : false;
@@ -87,7 +87,7 @@ export async function googleLogin(req, res, next) {
       typeof info.email === "string";
     if (!valid) return res.status(401).json({ error: "Jeton Google invalide" });
 
-    const { rows } = await query("SELECT * FROM admins WHERE lower(email) = lower($1)", [info.email]);
+    const { rows } = await query("SELECT * FROM admins WHERE lower(email) = lower($1) AND deleted_at IS NULL", [info.email]);
     const admin = rows[0];
     if (!admin) return res.status(403).json({ error: "Ce compte Google n'est pas autorise a administrer le site" });
 
@@ -100,7 +100,7 @@ export async function googleLogin(req, res, next) {
 
 export async function me(req, res, next) {
   try {
-    const { rows } = await query("SELECT id, name, phone, email FROM admins WHERE id = $1", [req.admin.id]);
+    const { rows } = await query("SELECT id, name, phone, email FROM admins WHERE id = $1 AND deleted_at IS NULL", [req.admin.id]);
     if (rows.length === 0) {
       return res.status(404).json({ error: "Admin not found" });
     }

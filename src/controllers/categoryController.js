@@ -11,7 +11,8 @@ export async function listCategories(req, res, next) {
     const { rows } = await query(
       `SELECT c.*, COUNT(p.id) AS product_count
        FROM categories c
-       LEFT JOIN products p ON p.category_id = c.id
+       LEFT JOIN products p ON p.category_id = c.id AND p.deleted_at IS NULL
+       WHERE c.deleted_at IS NULL
        GROUP BY c.id
        ORDER BY c.sort_order ASC, c.name ASC`
     );
@@ -49,7 +50,7 @@ export async function updateCategory(req, res, next) {
     const { name } = parsed.data;
     const slug = await uniqueSlug("categories", name, Number(id));
     const { rows } = await query(
-      "UPDATE categories SET name = $1, slug = $2 WHERE id = $3 RETURNING *",
+      "UPDATE categories SET name = $1, slug = $2 WHERE id = $3 AND deleted_at IS NULL RETURNING *",
       [name, slug, id]
     );
     if (rows.length === 0) {
@@ -64,7 +65,7 @@ export async function updateCategory(req, res, next) {
 export async function deleteCategory(req, res, next) {
   try {
     const { id } = req.params;
-    const { rowCount } = await query("DELETE FROM categories WHERE id = $1", [id]);
+    const { rowCount } = await query("UPDATE categories SET deleted_at = now() WHERE id = $1 AND deleted_at IS NULL", [id]);
     if (rowCount === 0) {
       return res.status(404).json({ error: "Category not found" });
     }
@@ -85,7 +86,7 @@ export async function reorderCategories(req, res, next) {
     await query(
       `UPDATE categories c SET sort_order = v.ord::int
        FROM unnest($1::int[]) WITH ORDINALITY AS v(id, ord)
-       WHERE c.id = v.id`,
+       WHERE c.id = v.id AND c.deleted_at IS NULL`,
       [parsed.data.ids]
     );
     res.json({ data: { reordered: parsed.data.ids.length } });

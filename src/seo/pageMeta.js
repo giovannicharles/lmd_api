@@ -95,7 +95,7 @@ export async function metaFor(pathname, searchParams, origin) {
   if (pathname === "/catalogue") {
     const slug = searchParams.get("categorie");
     if (slug) {
-      const { rows } = await query("SELECT name, slug FROM categories WHERE slug = $1", [slug]);
+      const { rows } = await query("SELECT name, slug FROM categories WHERE slug = $1 AND deleted_at IS NULL", [slug]);
       if (rows[0]) {
         return {
           ...base,
@@ -116,7 +116,7 @@ export async function metaFor(pathname, searchParams, origin) {
   if (pathname === "/a-propos") {
     let about = site.seo.description;
     try {
-      const { rows } = await query("SELECT content FROM pages WHERE slug = 'about'");
+      const { rows } = await query("SELECT content FROM pages WHERE slug = 'about' AND deleted_at IS NULL");
       if (rows[0]?.content) about = rows[0].content;
     } catch {
       /* keep default */
@@ -137,8 +137,8 @@ export async function metaFor(pathname, searchParams, origin) {
   if (product) {
     const { rows } = await query(
       `SELECT p.*, c.name AS category_name, c.slug AS category_slug
-       FROM products p LEFT JOIN categories c ON c.id = p.category_id
-       WHERE p.slug = $1`,
+       FROM products p LEFT JOIN categories c ON c.id = p.category_id AND c.deleted_at IS NULL
+       WHERE p.slug = $1 AND p.deleted_at IS NULL`,
       [decodeURIComponent(product[1])]
     );
     const p = rows[0];
