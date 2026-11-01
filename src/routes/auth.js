@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { changePassword, login, me, updateProfile } from "../controllers/authController.js";
+import { authConfig, changePassword, googleLogin, login, me, updateProfile } from "../controllers/authController.js";
 import { authRequired } from "../middleware/auth.js";
 import { rateLimit } from "../middleware/rateLimit.js";
 
@@ -12,7 +12,9 @@ const loginLimiter = rateLimit({
   message: "Trop de tentatives. Reessayez dans quelques minutes.",
 });
 
+router.get("/config", authConfig);
 router.post("/login", loginLimiter, login);
+router.post("/google", loginLimiter, googleLogin);
 router.get("/me", authRequired, me);
 router.put("/me", authRequired, updateProfile);
 router.put("/password", authRequired, changePassword);

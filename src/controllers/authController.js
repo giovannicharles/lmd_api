@@ -57,6 +57,47 @@ export async function login(req, res, next) {
   }
 }
 
+export function authConfig(_req, res) {
+  res.json({ data: { google_client_id: process.env.GOOGLE_CLIENT_ID || "" } });
+}
+
+export async function googleLogin(req, res, next) {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID || "";
+    if (!clientId) return res.status(503).json({ error: "Connexion Google non configuree" });
+    const parsed = z.object({ credential: z.string().min(20).max(4000) }).safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: "Jeton Google manquant" });
+
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 12_000);
+    let info;
+    try {
+      const r = await fetch("https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(parsed.data.credential), { signal: ctrl.signal });
+      if (!r.ok) return res.status(401).json({ error: "Jeton Google invalide" });
+      info = await r.json();
+    } finally {
+      clearTimeout(timer);
+    }
+
+    const valid =
+      info.aud === clientId &&
+      (info.email_verified === true || info.email_verified === "true") &&
+      Number(info.exp) * 1000 > Date.now() &&
+      /^(https:\/\/)?accounts\.google\.com$/.test(info.iss || "") &&
+      typeof info.email === "string";
+    if (!valid) return res.status(401).json({ error: "Jeton Google invalide" });
+
+    const { rows } = await query("SELECT * FROM admins WHERE lower(email) = lower($1)", [info.email]);
+    const admin = rows[0];
+    if (!admin) return res.status(403).json({ error: "Ce compte Google n'est pas autorise a administrer le site" });
+
+    res.json({ data: { token: sign(admin), admin: publicAdmin(admin) } });
+  } catch (err) {
+    if (err?.name === "AbortError" || err instanceof TypeError) return res.status(502).json({ error: "Google indisponible" });
+    next(err);
+  }
+}
+
 export async function me(req, res, next) {
   try {
     const { rows } = await query("SELECT id, name, phone, email FROM admins WHERE id = $1", [req.admin.id]);
