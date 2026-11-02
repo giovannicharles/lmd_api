@@ -1,4 +1,4 @@
--- LaMaison Dany — Migration initiale (V1)
+-- LaMaison Dany: Migration initiale (V1)
 -- Tables: admins, categories, products, pages, messages
 
 CREATE EXTENSION IF NOT EXISTS "citext";

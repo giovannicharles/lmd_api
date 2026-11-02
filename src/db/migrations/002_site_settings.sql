@@ -1,4 +1,4 @@
--- LaMaison Dany — Reglages du site (contenu editable depuis l'admin)
+-- LaMaison Dany: Reglages du site (contenu editable depuis l'admin)
 
 CREATE TABLE IF NOT EXISTS site_settings (
   key         TEXT PRIMARY KEY,

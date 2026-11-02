@@ -1,4 +1,4 @@
--- LaMaison Dany — Connexion admin par numero de telephone
+-- LaMaison Dany: Connexion admin par numero de telephone
 
 ALTER TABLE admins ADD COLUMN IF NOT EXISTS phone TEXT;
 ALTER TABLE admins ALTER COLUMN email DROP NOT NULL;

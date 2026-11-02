@@ -20,6 +20,11 @@ if (process.env.NODE_ENV === "production") {
   }
 }
 
+const firstHttpsOrigin = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((o) => o.trim().replace(/[/]+$/, ""))
+  .find((o) => /^https:[/][/]/.test(o)) || "";
+
 export const env = {
   port: process.env.PORT || 4000,
   nodeEnv: process.env.NODE_ENV || "development",
@@ -29,9 +34,9 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
   publicUrl: (process.env.PUBLIC_URL || "").replace(/\/+$/, ""),
-  publicSiteUrl: (process.env.PUBLIC_SITE_URL || "").replace(/[/]+$/, ""),
+  publicSiteUrl: (process.env.PUBLIC_SITE_URL || firstHttpsOrigin).replace(/[/]+$/, ""),
   frontendDist: process.env.FRONTEND_DIST || "",
-  frontendUrl: (process.env.FRONTEND_URL || "").replace(/[/]+$/, ""),
+  frontendUrl: (process.env.FRONTEND_URL || firstHttpsOrigin).replace(/[/]+$/, ""),
   whatsappNumber: process.env.WHATSAPP_NUMBER || "",
   cloudinary: {
     cloudName: process.env.CLOUDINARY_CLOUD_NAME || "",

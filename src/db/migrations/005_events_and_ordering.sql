@@ -1,4 +1,4 @@
--- LaMaison Dany — Statistiques d'usage (sans donnees personnelles) et ordre des categories
+-- LaMaison Dany: Statistiques d'usage (sans donnees personnelles) et ordre des categories
 
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
 

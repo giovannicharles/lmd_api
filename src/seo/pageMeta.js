@@ -1,5 +1,5 @@
 import { query } from "../config/db.js";
-import { absolute, isoCurrency, loadSiteSettings, shareImage, truncate } from "./site.js";
+import { absolute, fillTemplate, isoCurrency, loadSiteSettings, shareImage, truncate } from "./site.js";
 
 const escapeHtml = (s) =>
   String(s ?? "")
@@ -28,7 +28,17 @@ function organizationLd(site, origin) {
       ...(g.opening_hours ? { openingHours: g.opening_hours } : {}),
       ...(sameAs.length ? { sameAs } : {}),
     },
-    { "@context": "https://schema.org", "@type": "WebSite", name: g.brand, url: origin, inLanguage: "fr" },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: g.brand,
+      url: origin,
+      inLanguage: "fr",
+      potentialAction: { "@type": "SearchAction", target: { "@type": "EntryPoint", urlTemplate: `${origin}/catalogue?q={search_term_string}` }, "query-input": "required name=search_term_string" },
+    },
+    ...(site.faq.length
+      ? [{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: site.faq.slice(0, 10).map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }]
+      : []),
   ];
 }
 
@@ -86,7 +96,14 @@ export async function metaFor(pathname, searchParams, origin) {
     canonical: origin + "/",
     ld: [],
   };
-  const withBrand = (t) => `${t} | ${brand}`;
+  const withBrand = (t) => (`${t} | ${brand}`.length <= 62 ? `${t} | ${brand}` : t);
+  const T = site.texts;
+  const vars = { brand };
+  const crumbs = (items) => ({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map(([name, item], i) => ({ "@type": "ListItem", position: i + 1, name, item })),
+  });
 
   if (pathname === "/" || pathname === "") {
     return { ...base, ld: organizationLd(site, origin) };
@@ -94,42 +111,50 @@ export async function metaFor(pathname, searchParams, origin) {
 
   if (pathname === "/catalogue") {
     const slug = searchParams.get("categorie");
+    const search = (searchParams.get("q") || "").trim();
+    if (search) {
+      return { ...base, noindex: true, title: withBrand(fillTemplate(T.seo_shop_title, vars)), description: fillTemplate(T.seo_shop_description, vars), canonical: origin + "/catalogue" };
+    }
     if (slug) {
       const { rows } = await query("SELECT name, slug FROM categories WHERE slug = $1 AND deleted_at IS NULL", [slug]);
       if (rows[0]) {
+        const v = { ...vars, category: rows[0].name };
         return {
           ...base,
-          title: withBrand(`${rows[0].name} : la boutique`),
-          description: `Découvrez notre sélection ${rows[0].name.toLowerCase()} chez ${brand}. Un clic, et la conversation WhatsApp s'ouvre.`,
+          title: withBrand(fillTemplate(T.seo_category_title, v)),
+          description: fillTemplate(T.seo_category_description, v),
           canonical: `${origin}/catalogue?categorie=${rows[0].slug}`,
+          ld: [crumbs([["Accueil", origin + "/"], ["Boutique", origin + "/catalogue"], [rows[0].name, `${origin}/catalogue?categorie=${rows[0].slug}`]])],
         };
       }
     }
     return {
       ...base,
-      title: withBrand("La boutique"),
-      description: `Parfums, cosmétiques, vins et plus encore. Parcourez la boutique ${brand} et commandez sur WhatsApp.`,
+      title: withBrand(fillTemplate(T.seo_shop_title, vars)),
+      description: fillTemplate(T.seo_shop_description, vars),
       canonical: origin + "/catalogue",
+      ld: [{ "@context": "https://schema.org", "@type": "CollectionPage", name: fillTemplate(T.seo_shop_title, vars), url: origin + "/catalogue", inLanguage: "fr" }, crumbs([["Accueil", origin + "/"], ["Boutique", origin + "/catalogue"]])],
     };
   }
 
   if (pathname === "/a-propos") {
-    let about = site.seo.description;
+    let about = fillTemplate(T.seo_about_description, vars);
     try {
       const { rows } = await query("SELECT content FROM pages WHERE slug = 'about' AND deleted_at IS NULL");
       if (rows[0]?.content) about = rows[0].content;
     } catch {
       /* keep default */
     }
-    return { ...base, title: withBrand("À propos"), description: about, canonical: origin + "/a-propos" };
+    return { ...base, title: withBrand(fillTemplate(T.seo_about_title, vars)), description: about, canonical: origin + "/a-propos", ld: [crumbs([["Accueil", origin + "/"], ["À propos", origin + "/a-propos"]])] };
   }
 
   if (pathname === "/contact") {
     return {
       ...base,
-      title: withBrand("Contact"),
-      description: "Une question, un conseil, une commande ? Écrivez-nous sur WhatsApp ou laissez un message : nous vous répondons très vite.",
+      title: withBrand(fillTemplate(T.seo_contact_title, vars)),
+      description: fillTemplate(T.seo_contact_description, vars),
       canonical: origin + "/contact",
+      ld: [{ "@context": "https://schema.org", "@type": "ContactPage", name: fillTemplate(T.seo_contact_title, vars), url: origin + "/contact", inLanguage: "fr" }, crumbs([["Accueil", origin + "/"], ["Contact", origin + "/contact"]])],
     };
   }
 
@@ -143,13 +168,13 @@ export async function metaFor(pathname, searchParams, origin) {
     );
     const p = rows[0];
     if (!p) {
-      return { ...base, status: 404, noindex: true, title: withBrand("Produit introuvable"), canonical: origin + pathname };
+      return { ...base, status: 404, noindex: true, title: withBrand(fillTemplate(T.seo_notfound_title, vars)), canonical: origin + pathname };
     }
     return {
       ...base,
       type: "product",
-      title: withBrand(p.name),
-      description: p.description || `${p.name} chez ${brand}. Commandez simplement sur WhatsApp.`,
+      title: withBrand(fillTemplate(T.seo_product_title, { ...vars, name: p.name, category: p.category_name || "" })),
+      description: p.description ? truncate(p.description) : fillTemplate(T.seo_product_description, { ...vars, name: p.name, category: p.category_name || "" }),
       image: p.image_url ? shareImage(p.image_url, origin) : base.image,
       canonical: `${origin}/produit/${p.slug}`,
       ld: productLd(p, site, origin),
@@ -164,8 +189,9 @@ export async function metaFor(pathname, searchParams, origin) {
 }
 
 export function renderSeoBlock(meta, site) {
-  const title = escapeHtml(meta.title);
-  const description = escapeHtml(truncate(meta.description));
+  const noDash = (t) => String(t ?? "").replace(/\s*[—–]\s*/g, ", ");
+  const title = escapeHtml(noDash(meta.title));
+  const description = escapeHtml(truncate(noDash(meta.description)));
   const image = escapeHtml(meta.image);
   const url = escapeHtml(meta.canonical);
   const brand = escapeHtml(site.general.brand);
